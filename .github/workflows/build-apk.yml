@@ -18,14 +18,40 @@ jobs:
         run: |
           mkdir -p android/app/src/main/res/raw
           cp www/sounds/*.wav android/app/src/main/res/raw/
-      - name: Pasang kode alarm layar penuh & input suara
+      - name: Pasang kode alarm layar penuh, input suara, izin & komponen
         run: |
-         D=android/app/src/main/java/com/taskalarm/pro
-          mkdir -p $D
-          find java -name '*.java' -exec cp {} $D/ \;
-          M=android/app/src/main/AndroidManifest.xml
-          sed -i 's#</manifest>#<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/></manifest>#' $M
-          sed -i 's#</application>#<activity android:name=".AlarmActivity" android:exported="false" android:launchMode="singleInstance" android:taskAffinity="" android:excludeFromRecents="true" android:showWhenLocked="true" android:turnScreenOn="true" android:theme="@android:style/Theme.DeviceDefault.NoActionBar"/><service android:name=".AlarmService" android:exported="false" android:foregroundServiceType="mediaPlayback"/><receiver android:name=".AlarmReceiver" android:exported="false"/><receiver android:name=".BootReceiver" android:exported="true"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/><action android:name="android.intent.action.MY_PACKAGE_REPLACED"/></intent-filter></receiver></application>#' $M      - run: npx cap sync android
+          D=android/app/src/main/java/com/taskalarm/pro
+          mkdir -p "$D"
+          find java -name '*.java' -exec cp {} "$D/" \;
+          ls -la "$D"
+          python3 - <<'PY'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+          perms = ['POST_NOTIFICATIONS', 'SCHEDULE_EXACT_ALARM', 'USE_FULL_SCREEN_INTENT',
+                   'VIBRATE', 'WAKE_LOCK', 'RECEIVE_BOOT_COMPLETED', 'SYSTEM_ALERT_WINDOW',
+                   'FOREGROUND_SERVICE', 'FOREGROUND_SERVICE_MEDIA_PLAYBACK']
+          add = ''.join('<uses-permission android:name="android.permission.%s"/>' % x
+                        for x in perms if 'android.permission.%s"' % x not in s)
+          s = s.replace('</manifest>', add + '</manifest>', 1)
+          if '.AlarmActivity' not in s:
+              comp = ('<activity android:name=".AlarmActivity" android:exported="false" '
+                      'android:launchMode="singleInstance" android:taskAffinity="" '
+                      'android:excludeFromRecents="true" android:showWhenLocked="true" '
+                      'android:turnScreenOn="true" '
+                      'android:theme="@android:style/Theme.DeviceDefault.NoActionBar"/>'
+                      '<service android:name=".AlarmService" android:exported="false" '
+                      'android:foregroundServiceType="mediaPlayback"/>'
+                      '<receiver android:name=".AlarmReceiver" android:exported="false"/>'
+                      '<receiver android:name=".BootReceiver" android:exported="true">'
+                      '<intent-filter>'
+                      '<action android:name="android.intent.action.BOOT_COMPLETED"/>'
+                      '<action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>'
+                      '</intent-filter></receiver>')
+              s = s.replace('</application>', comp + '</application>', 1)
+          open(p, 'w', encoding='utf-8').write(s)
+          print(s)
+          PY
+      - run: npx cap sync android
       - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
