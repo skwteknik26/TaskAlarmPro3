@@ -1,0 +1,30 @@
+<!-- 1) Tambahkan di dalam <manifest>, sejajar dengan <uses-permission> yang sudah ada -->
+<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+<!-- (USE_FULL_SCREEN_INTENT, WAKE_LOCK, VIBRATE, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED sudah ada di APK Anda) -->
+
+<!-- 2) Tambahkan di dalam <application>, di samping <activity MainActivity> -->
+<activity
+    android:name=".AlarmActivity"
+    android:exported="false"
+    android:launchMode="singleInstance"
+    android:taskAffinity=""
+    android:excludeFromRecents="true"
+    android:showWhenLocked="true"
+    android:turnScreenOn="true"
+    android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
+
+<service
+    android:name=".AlarmService"
+    android:exported="false"
+    android:foregroundServiceType="mediaPlayback" />
+
+<receiver android:name=".AlarmReceiver" android:exported="false" />
+
+<receiver android:name=".BootReceiver" android:exported="true">
+    <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+    </intent-filter>
+</receiver>
